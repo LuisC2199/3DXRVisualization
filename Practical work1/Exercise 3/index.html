@@ -37,7 +37,7 @@
 
         // Function to create each cube
         function makeInstance(scene, texture, geometry, color, x) {
-            const material = new THREE.MeshBasicMaterial({color, map: texture, side: THREE.DoubleSide});
+            const material = new THREE.MeshBasicMaterial({color, map: texture, side: THREE.DoubleSide}); // Add double side to render both faces
 
             const cube = new THREE.Mesh(geometry, material);
             scene.add(cube);
