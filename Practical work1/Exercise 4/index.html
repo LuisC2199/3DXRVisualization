@@ -1,5 +1,4 @@
 
-<!-- Licensed under a BSD license. See license.html for license -->
 <!DOCTYPE html>
 <html>
   <head>
@@ -12,14 +11,14 @@
     <style>
       html,
       body {
-        width: 50%;
-        height: 50%;
+        width: 100%;
+        height: 100%;
         margin: 0;
       }
 
       #c {
-        width: 50%;
-        height: 50%;
+        width: 100%;
+        height: 100%;
         display: block;
       }
     </style>
@@ -35,23 +34,24 @@
     </script>
 
     <script type="module">
+      // Import needed libraries
       import * as THREE from 'three';
       import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
       function main() {
         const canvas = document.querySelector( '#c' );
-        const renderer = new THREE.WebGLRenderer( { antialias: true, canvas: canvas } );
+        const renderer = new THREE.WebGLRenderer( {canvas, antialias: true } );
         renderer.setClearColor( 0xA9B5DF );
-        renderer.shadowMap.enabled = true;
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        var aspect = window.innerWidth / window.innerHeight;
-        var camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
+        renderer.shadowMap.enabled = true; // Enable shadows
+        
+        // Create camera
+        var camera = new THREE.PerspectiveCamera(75, 2, 0.1, 1000);
         camera.position.set( 0, 2, 8 ).multiplyScalar( 3 );
         camera.lookAt( 0, 0, 0 );
 
         var scene = new THREE.Scene();
 
-        // Lights
+        // Create lights
         {
           const light = new THREE.DirectionalLight( 0xffffff, 3 );
           light.position.set( 0, 20, 0 );
@@ -60,6 +60,7 @@
           light.shadow.mapSize.width = 2048;
           light.shadow.mapSize.height = 2048;
 
+          // Add properties for the shadow
           const d = 50;
           light.shadow.camera.left = - d;
           light.shadow.camera.right = d;
@@ -313,6 +314,7 @@
             camera.aspect = canvas.clientWidth / canvas.clientHeight;
             camera.updateProjectionMatrix();
           }
+
           const maxAngleShoulder = Math.PI / 4;
           const maxAngleUArm = Math.PI / 6; 
           const maxAngleFArm = Math.PI / 8; 
