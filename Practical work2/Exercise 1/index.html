@@ -1,5 +1,3 @@
-
-<!-- Licensed under a BSD license. See license.html for license -->
 <!DOCTYPE html>
 <html>
   <head>
@@ -39,13 +37,14 @@
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+        // Create scene, camera and renderer
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer();
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Walls (Cornell Box)
+        // Function to create planes for walls
         const createWall = (w, h, d, color, x, y, z, rx = 0, ry = 0, rz = 0) => {
             const geometry = new THREE.BoxGeometry(w, h, d);
             const material = new THREE.MeshLambertMaterial({ color:color });
@@ -56,24 +55,26 @@
             return mesh;
         };
 
-        // Floor, Ceiling, and Walls
+        // Create floor, ceiling, and walls
         createWall(12.5, 12.5, 0.1, 0xffffff, 0, 0, -6.25); // Back Wall
         createWall(12.5, 12.5, 0.1, 0xff0000, -6.25, 0, 0, 0, Math.PI / 2, 0); // Left Wall (Red)
         createWall(12.5, 12.5, 0.1, 0x00ff00, 6.25, 0, 0, 0, Math.PI / 2, 0); // Right Wall (Green)
         createWall(12.5, 0.1, 12.5, 0x9f9f9f, 0, -6.25, 0); // Floor
         createWall(12.5, 0.1, 12.5, 0xffffff, 0, 6.25, 0); // Ceiling
 
-        // Table in the middle
+        // Function to create table
         const createTable = (x, y, z, rotationY = 0) => {
             const tableTop = new THREE.BoxGeometry(2, 0.2, 4);
             const tableLeg = new THREE.BoxGeometry(0.2, 2.5, 0.2);
             const material = new THREE.MeshLambertMaterial({ color: 0xf0f0f0 });
 
+            // create and position tabletop
             const top = new THREE.Mesh(tableTop, material);
             top.position.set(x, y + 0.6, z);
             top.rotation.y = rotationY;
             scene.add(top);
 
+            // Offset for the legs with respect to top position
             const legOffsets = [
                 [-0.9, -0.7, -1.6],
                 [0.9, -0.7, -1.6],
@@ -81,6 +82,7 @@
                 [0.9, -0.7, 1.6]
             ];
 
+            // Create each leg
             legOffsets.forEach(offset => {
                 const leg = new THREE.Mesh(tableLeg, material);
                 const rotatedX = offset[0] * Math.cos(rotationY) - offset[2] * Math.sin(rotationY);
@@ -118,7 +120,7 @@
         const cylinderGeometry = new THREE.CylinderGeometry( 1, 1, 4, 16 );
         const cylinderMaterial = new THREE.MeshPhongMaterial({ color: 0x9A2C80 });
         const cylinder = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
-        cylinder.position.set(3, -2, -2);
+        cylinder.position.set(3, -1.5, -2);
         scene.add(cylinder);
 
         // Physical Sphere
