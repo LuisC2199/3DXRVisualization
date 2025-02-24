@@ -51,7 +51,7 @@
         // Texture Loader
         const textureLoader = new THREE.TextureLoader();
 
-        // Walls (Cornell Box)
+        // Function to create walls
         const createWall = (w, h, d, color, x, y, z, rx = 0, ry = 0, rz = 0) => {
             const geometry = new THREE.BoxGeometry(w, h, d);
             const material = new THREE.MeshLambertMaterial({ color:color });
@@ -62,14 +62,14 @@
             return mesh;
         };
 
-        // Floor, Ceiling, and Walls
-        createWall(12.5, 12.5, 0.1, 0xffffff, 0, 0, -6.25); // Back Wall
-        createWall(12.5, 12.5, 0.1, 0xff0000, -6.25, 0, 0, 0, Math.PI / 2, 0); // Left Wall (Red)
-        createWall(12.5, 12.5, 0.1, 0x00ff00, 6.25, 0, 0, 0, Math.PI / 2, 0); // Right Wall (Green)
-        createWall(12.5, 0.1, 12.5, 0x9f9f9f, 0, -6.25, 0); // Floor
-        createWall(12.5, 0.1, 12.5, 0xffffff, 0, 6.25, 0); // Ceiling
+        // Walls, floor and ceiling
+        createWall(12.5, 12.5, 0.1, 0xffffff, 0, 0, -6.25); 
+        createWall(12.5, 12.5, 0.1, 0xff0000, -6.25, 0, 0, 0, Math.PI / 2, 0); 
+        createWall(12.5, 12.5, 0.1, 0x00ff00, 6.25, 0, 0, 0, Math.PI / 2, 0); 
+        createWall(12.5, 0.1, 12.5, 0x9f9f9f, 0, -6.25, 0); 
+        createWall(12.5, 0.1, 12.5, 0xffffff, 0, 6.25, 0); 
 
-        // Table in the middle
+        // Table creator
         const createTable = (x, y, z, rotationY = 0) => {
             const tableTop = new THREE.BoxGeometry(2, 0.2, 4);
             const tableLeg = new THREE.BoxGeometry(0.2, 2.5, 0.2);
@@ -96,6 +96,7 @@
             });
         };
 
+        // Tablesss
         createTable(-3, -4.25, 3);
         createTable(3, -4.25, 3);
         createTable(-3, -4.25, -1);
@@ -104,6 +105,7 @@
 
         // Light Sources
         {
+          // Point light
           const light = new THREE.PointLight(0xffffff, 20, 200);
           light.position.set(0, 4, 0);
           scene.add(light);
@@ -117,17 +119,20 @@
         {
           RectAreaLightUniformsLib.init();
 
-          const rectLight1 = new THREE.RectAreaLight( 0xffffff, 5, 12.5, 12.5 );
+          // White back light
+          const rectLight1 = new THREE.RectAreaLight( 0xffffff, 2, 12.5, 12.5 );
           rectLight1.position.set( 0, 0, -6.25 );
           rectLight1.rotation.y = Math.PI;
           scene.add( rectLight1 );
 
-          const rectLight2 = new THREE.RectAreaLight( 0xff0000, 10, 12.5, 12.5 );
+          // Red left light
+          const rectLight2 = new THREE.RectAreaLight( 0xff0000, 2, 12.5, 12.5 );
           rectLight2.position.set( -6.25, 0, 0 );
           rectLight2.rotation.y = -Math.PI/2;
           scene.add( rectLight2 );
 
-          const rectLight3 = new THREE.RectAreaLight( 0x00ff00, 1, 12.5, 12.5 );
+          // Green right light
+          const rectLight3 = new THREE.RectAreaLight( 0x00ff00, 2, 12.5, 12.5 );
           rectLight3.position.set( 6.25, 0, 0 );
           rectLight3.rotation.y = Math.PI/2;
           scene.add( rectLight3 );
@@ -154,7 +159,7 @@
         const cylinderGeometry = new THREE.CylinderGeometry( 1, 1, 4, 16 );
         const cylinderMaterial = new THREE.MeshPhongMaterial({ color: 0x9A2C80 });
         const cylinder = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
-        cylinder.position.set(3, -2, -2);
+        cylinder.position.set(3, -1.5, -2);
         scene.add(cylinder);
 
         // Physical Sphere
@@ -165,10 +170,10 @@
         sphere.position.set(0, -5.25, 2);
         scene.add(sphere);
 
-        // GUI Setup
+        // GUI
         const gui = new GUI();
 
-        // Shared Folder
+        // Shared properties
         const materialSettings = {
             transparent: false,
             opacity: 1.0,
