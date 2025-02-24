@@ -1,5 +1,3 @@
-
-<!-- Licensed under a BSD license. See license.html for license -->
 <!DOCTYPE html>
 <html>
   <head>
@@ -46,7 +44,7 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Walls (Cornell Box)
+        // Wall creator
         const createWall = (w, h, d, color, x, y, z, rx = 0, ry = 0, rz = 0) => {
             const geometry = new THREE.BoxGeometry(w, h, d);
             const material = new THREE.MeshLambertMaterial({ color:color });
@@ -57,14 +55,14 @@
             return mesh;
         };
 
-        // Floor, Ceiling, and Walls
-        createWall(12.5, 12.5, 0.1, 0xffffff, 0, 0, -6.25); // Back Wall
-        createWall(12.5, 12.5, 0.1, 0xff0000, -6.25, 0, 0, 0, Math.PI / 2, 0); // Left Wall (Red)
-        createWall(12.5, 12.5, 0.1, 0x00ff00, 6.25, 0, 0, 0, Math.PI / 2, 0); // Right Wall (Green)
-        createWall(12.5, 0.1, 12.5, 0x9f9f9f, 0, -6.25, 0); // Floor
-        createWall(12.5, 0.1, 12.5, 0xffffff, 0, 6.25, 0); // Ceiling
+        // Create walls
+        createWall(12.5, 12.5, 0.1, 0xffffff, 0, 0, -6.25); 
+        createWall(12.5, 12.5, 0.1, 0xff0000, -6.25, 0, 0, 0, Math.PI / 2, 0); 
+        createWall(12.5, 12.5, 0.1, 0x00ff00, 6.25, 0, 0, 0, Math.PI / 2, 0);
+        createWall(12.5, 0.1, 12.5, 0x9f9f9f, 0, -6.25, 0); 
+        createWall(12.5, 0.1, 12.5, 0xffffff, 0, 6.25, 0);
 
-        // Table in the middle
+        // Tables
         const createTable = (x, y, z, rotationY = 0) => {
             const tableTop = new THREE.BoxGeometry(2, 0.2, 4);
             const tableLeg = new THREE.BoxGeometry(0.2, 2.5, 0.2);
@@ -91,6 +89,7 @@
             });
         };
 
+        // Tables
         createTable(-3, -4.25, 3);
         createTable(3, -4.25, 3);
         createTable(-3, -4.25, -1);
@@ -110,8 +109,8 @@
         scene.add(pointLight);
     
         // Spot Light
-        const spotLight = new THREE.SpotLight(0xffffff, 1);
-        spotLight.position.set(0, 4, 0);
+        const spotLight = new THREE.SpotLight(0xffffff, 10);
+        spotLight.position.set(0, 3, 0);
         spotLight.angle = Math.PI / 4;
         scene.add(spotLight);
 
@@ -148,8 +147,10 @@
         sphere.position.set(0, -5.25, 2);
         scene.add(sphere);
 
-        // GUI setup
+        // GUI to modify each of the lights
         const gui = new GUI();
+
+        // Directional 
         const dirFolder = gui.addFolder('Directional Light');
         dirFolder.addColor({ color: "#ffffff" }, 'color').onChange(value => {
             directionalLight.color.set(value);
@@ -158,24 +159,27 @@
 
         dirFolder.open();
 
+        // Point
         const pointFolder = gui.addFolder('Point Light');
         pointFolder.addColor({ color: "#ffffff" }, 'color').onChange(value => {
             pointLight.color.set(value);
         });
-        pointFolder.add(pointLight, 'intensity', 0, 2);
+        pointFolder.add(pointLight, 'intensity', 0, 20);
         pointFolder.add(pointLight, 'distance', 1, 20);
 
         pointFolder.open();
 
+        // Spot
         const spotFolder = gui.addFolder('Spot Light');
         spotFolder.addColor({ color: "#ffffff" }, 'color').onChange(value => {
             spotLight.color.set(value);
         });
-        spotFolder.add(spotLight, 'intensity', 0, 2);
+        spotFolder.add(spotLight, 'intensity', 0, 20);
         spotFolder.add(spotLight, 'angle', 0, Math.PI / 2);
 
         spotFolder.open();
 
+        // Hemisphere
         const hemiFolder = gui.addFolder('Hemisphere Light');
         hemiFolder.addColor({ skyColor: "#ffffff" }, 'skyColor').onChange(value => {
             hemisphereLight.color.set(value);
