@@ -1,0 +1,349 @@
+
+<!-- Licensed under a BSD license. See license.html for license -->
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=yes"
+    />
+    <title>Three.js - Blue</title>
+    <style>
+      html,
+      body {
+        width: 50%;
+        height: 50%;
+        margin: 0;
+      }
+
+      #c {
+        width: 50%;
+        height: 50%;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="c"></canvas>
+    <script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"></script>
+    <script type="importmap">
+    {"imports": {
+        "three": "https://unpkg.com/three@0.172.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.172.0/examples/jsm/"}
+    }
+    </script>
+
+    <script type="module">
+      import * as THREE from 'three';
+      import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+      import {VRButton} from 'three/addons/webxr/VRButton.js';
+
+      function main() {
+        const canvas = document.querySelector( '#c' );
+        const renderer = new THREE.WebGLRenderer( { antialias: true, canvas: canvas } );
+        renderer.setClearColor( 0xA9B5DF );
+        renderer.shadowMap.enabled = true;
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.xr.enabled = true;
+        document.body.appendChild(VRButton.createButton(renderer));
+        var aspect = window.innerWidth / window.innerHeight;
+        var camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
+        camera.position.set( 0, 1.6, 10 ).multiplyScalar( 3 );
+
+        var scene = new THREE.Scene();
+
+        // Lights
+        {
+          const light = new THREE.DirectionalLight( 0xffffff, 3 );
+          light.position.set( 0, 20, 0 );
+          scene.add( light );
+          light.castShadow = true;
+          light.shadow.mapSize.width = 2048;
+          light.shadow.mapSize.height = 2048;
+
+          const d = 50;
+          light.shadow.camera.left = - d;
+          light.shadow.camera.right = d;
+          light.shadow.camera.top = d;
+          light.shadow.camera.bottom = - d;
+          light.shadow.camera.near = 1;
+          light.shadow.camera.far = 50;
+          light.shadow.bias = 0.001;
+        }
+
+        {
+          const light = new THREE.DirectionalLight( 0xffffff, 3 );
+          light.position.set( 1, 2, 4 );
+          scene.add( light );
+        }
+
+        // Create Orbit controls
+				const controls = new OrbitControls(camera, canvas);
+				controls.target.set(0, 0, 0);
+				controls.update();
+
+        // Ground Table Mesh
+        const groundGeometry = new THREE.PlaneGeometry( 70, 70 );
+        const groundMaterial = new THREE.MeshPhongMaterial( { color: 0x213555 } );
+        const groundMesh = new THREE.Mesh( groundGeometry, groundMaterial );
+        groundMesh.rotation.x = Math.PI * - .5;
+        groundMesh.position.y = -1;
+        groundMesh.receiveShadow = true;
+        scene.add( groundMesh );
+
+        const base = new THREE.Object3D();
+        scene.add( base );
+
+        // Base Prism Mesh
+        const prismGeometry = new THREE.BoxGeometry(1.5, 12, 1.5);
+        const prismMaterial = new THREE.MeshPhongMaterial( { color: 0xDFE7DE } );
+        const prismMesh = new THREE.Mesh( prismGeometry, prismMaterial );
+        prismMesh.position.y = 5;
+        prismMesh.castShadow = true;
+        base.add(prismMesh);
+
+        // Torso Mesh
+        const torso = new THREE.Object3D();
+        base.add( torso );
+
+        const loader = new THREE.TextureLoader();
+        const texture = loader.load( 'logo.png' );
+        texture.colorSpace = THREE.SRGBColorSpace;
+
+        const torsoGeometry = new THREE.IcosahedronGeometry( 3.5 );
+        const faceCount = torsoGeometry.attributes.position.count / 3;
+
+        const textureMaterial = new THREE.MeshPhongMaterial({ map: texture });
+        const robotMaterial = new THREE.MeshPhongMaterial( { color: 0x474F4B } );
+
+        const materials = Array(faceCount).fill(robotMaterial); // Default all faces to black
+        materials[1] = textureMaterial;
+
+        torsoGeometry.groups = [];
+
+        for (let i = 0; i < 20; i++) {
+          torsoGeometry.groups.push({
+            start: i * 3,
+            count: 3,
+            materialIndex: i
+          });
+        }
+
+        // Manually set UVs so the image fits on the selected face
+        const uvArray = new Float32Array(20 * 3 * 2); // Each vertex has (u, v)
+        const uvAttribute = new THREE.BufferAttribute(uvArray, 2);
+        torsoGeometry.setAttribute("uv", uvAttribute);
+
+        // Define UVs for the selected face (index 4)
+        const uvFaceIndex = 1 * 3 * 2; // Each face has 3 vertices, each vertex has (u, v)
+        uvArray.set(
+          [
+            0, 0, // Bottom-left
+            1, 0, // Bottom-right
+            0.5, 1, // Top-center
+          ],
+          uvFaceIndex
+        );
+        
+
+        const torsoMesh = new THREE.Mesh( torsoGeometry, materials );
+        torsoMesh.position.y = 6;
+        torsoMesh.rotation.x = 1;
+        torsoMesh.castShadow = true;
+        torso.add(torsoMesh);
+
+        // Geometries
+        const whiteMaterial = new THREE.MeshPhongMaterial( { color: 0xFFFFFF } );
+        const armGeometry = new THREE.BoxGeometry( 1.7, 3.6, 1.7 );
+        const handGeometry = new THREE.CylinderGeometry( 0.7, 0.7, 1.2, 10);
+        const fingerGeometry = new THREE.CylinderGeometry( 0.1, 0.1, 1.0, 10);
+
+        
+        // Left Shoulder
+        const lShoulderPivot = new THREE.Object3D();
+        lShoulderPivot.position.y = 8.2;
+        lShoulderPivot.position.x = -1.6;
+        lShoulderPivot.position.z = 0.4;
+        lShoulderPivot.rotation.x = 0.2;
+        lShoulderPivot.rotation.z = 0.65;
+
+        const leftShoulderMesh = new THREE.Mesh( armGeometry, robotMaterial );
+        leftShoulderMesh.position.y = 1.8;
+        leftShoulderMesh.castShadow = true;
+        lShoulderPivot.add(leftShoulderMesh);
+        torso.add(lShoulderPivot);
+
+        // Right shoulder
+        const rShoulderPivot = new THREE.Object3D();
+        rShoulderPivot.position.y = 8.2;
+        rShoulderPivot.position.x = 1.6;
+        rShoulderPivot.position.z = 0.4;
+        rShoulderPivot.rotation.x = 0.2;
+        rShoulderPivot.rotation.z = -0.65;
+
+        const rightShoulderMesh = new THREE.Mesh( armGeometry, robotMaterial );
+        rightShoulderMesh.position.y = 1.8;
+        rightShoulderMesh.castShadow = true;
+        rShoulderPivot.add(rightShoulderMesh);
+        torso.add(rShoulderPivot);
+
+        // Left upper arm
+        const lUpperArmPivot = new THREE.Object3D();
+        lUpperArmPivot.position.y = 1;
+        lUpperArmPivot.rotation.x = Math.PI/2;
+        lUpperArmPivot.rotation.z = Math.PI/2;
+
+        const lUpperArmMesh = new THREE.Mesh( armGeometry, robotMaterial );
+        lUpperArmMesh.position.y = 1.6;
+        lUpperArmMesh.castShadow = true;
+        lUpperArmPivot.add(lUpperArmMesh);
+        leftShoulderMesh.add(lUpperArmPivot);
+
+        // Right upper arm
+        const rUpperArmPivot = new THREE.Object3D();
+        rUpperArmPivot.position.y = 1;
+        rUpperArmPivot.rotation.x = Math.PI/2;
+        rUpperArmPivot.rotation.z = -Math.PI/2;
+
+        const rUpperArmMesh = new THREE.Mesh( armGeometry, robotMaterial );
+        rUpperArmMesh.position.y = 1.6;
+        rUpperArmMesh.castShadow = true;
+        rUpperArmPivot.add(rUpperArmMesh);
+        rightShoulderMesh.add(rUpperArmPivot);
+
+        // Left forearm
+        const lForeArmPivot = new THREE.Object3D();
+        lForeArmPivot.position.y = 1;
+        lForeArmPivot.rotation.x = Math.PI/2;
+        lForeArmPivot.rotation.z = -Math.PI/2;
+
+        const lForeArmMesh = new THREE.Mesh( armGeometry, robotMaterial );
+        lForeArmMesh.position.y = 1.6;
+        lForeArmMesh.castShadow = true;
+        lForeArmPivot.add(lForeArmMesh);
+        lUpperArmMesh.add(lForeArmPivot);
+
+        // Right forearm
+        const rForeArmPivot = new THREE.Object3D();
+        rForeArmPivot.position.y = 1;
+        rForeArmPivot.rotation.x = Math.PI/2;
+        rForeArmPivot.rotation.z = Math.PI/2;
+
+        const rForeArmMesh = new THREE.Mesh( armGeometry, robotMaterial );
+        rForeArmMesh.position.y = 1.6;
+        rForeArmMesh.castShadow = true;
+        rForeArmPivot.add(rForeArmMesh);
+        rUpperArmMesh.add(rForeArmPivot);
+
+        // Left hand
+        const lHandPivot = new THREE.Object3D();
+        lHandPivot.position.y = 0.5;
+
+        const lHandMesh = new THREE.Mesh( handGeometry, robotMaterial );
+        lHandMesh.position.y = 1.6;
+        lHandMesh.castShadow = true;
+        lHandPivot.add(lHandMesh);
+        lForeArmMesh.add(lHandPivot);
+
+        // Right hand
+        const rHandPivot = new THREE.Object3D();
+        rHandPivot.position.y = 0.5;
+
+        const rHandMesh = new THREE.Mesh( handGeometry, robotMaterial );
+        rHandMesh.position.y = 1.6;
+        rHandMesh.castShadow = true;
+        rHandPivot.add(rHandMesh);
+        rForeArmMesh.add(rHandPivot);
+
+        // Left hand fingers
+        const lLfingerPivot = new THREE.Object3D();
+        lLfingerPivot.position.x = 0.33;
+
+        const lLfinger = new THREE.Mesh( fingerGeometry, whiteMaterial );
+        lLfinger.position.y = 1;
+        lLfinger.castShadow = true;
+        lLfingerPivot.add(lLfinger);
+        lHandMesh.add(lLfingerPivot);
+
+        const lRfingerPivot = new THREE.Object3D();
+        lRfingerPivot.position.x = -0.33;
+
+        const lRfinger = new THREE.Mesh( fingerGeometry, whiteMaterial );
+        lRfinger.position.y = 1;
+        lRfinger.castShadow = true;
+        lRfingerPivot.add(lRfinger);
+        lHandMesh.add(lRfingerPivot);
+
+        // right hand fingers
+        const rLfingerPivot = new THREE.Object3D();
+        rLfingerPivot.position.x = 0.33;
+
+        const rLfinger = new THREE.Mesh( fingerGeometry, whiteMaterial );
+        rLfinger.position.y = 1;
+        rLfinger.castShadow = true;
+        rLfingerPivot.add(rLfinger);
+        rHandMesh.add(rLfingerPivot);
+
+        const rRfingerPivot = new THREE.Object3D();
+        rRfingerPivot.position.x = -0.33;
+
+        const rRfinger = new THREE.Mesh( fingerGeometry, whiteMaterial );
+        rRfinger.position.y = 1;
+        rRfinger.castShadow = true;
+        rRfingerPivot.add(rRfinger);
+        rHandMesh.add(rRfingerPivot);
+
+
+
+        function resizeRendererToDisplaySize( renderer ) {
+          const canvas = renderer.domElement;
+          const width = canvas.clientWidth;
+          const height = canvas.clientHeight;
+          const needResize = canvas.width !== width || canvas.height !== height;
+          if ( needResize ) {
+            renderer.setSize( width, height, false );
+          }
+          return needResize;
+        }
+
+        function render( time ) {
+          time *= 0.001;
+
+          if ( resizeRendererToDisplaySize( renderer ) ) {
+            const canvas = renderer.domElement;
+            camera.aspect = canvas.clientWidth / canvas.clientHeight;
+            camera.updateProjectionMatrix();
+          }
+          const maxAngleShoulder = Math.PI / 4;
+          const maxAngleUArm = Math.PI / 6; 
+          const maxAngleFArm = Math.PI / 8; 
+          const maxAngleHand = Math.PI / 12;
+          const maxAngleFinger = Math.PI / 18; 
+
+          leftShoulderMesh.rotation.y  =  Math.sin(time * 0.5) * maxAngleShoulder;
+          rightShoulderMesh.rotation.y = -Math.sin(time * 1.0) * maxAngleShoulder; // 1 deg
+          lUpperArmMesh.rotation.y     =  Math.sin(time * 1.5) * maxAngleShoulder;
+          rUpperArmMesh.rotation.y     = -Math.sin(time * 2.0) * maxAngleShoulder; // 2 deg
+          lUpperArmPivot.rotation.y    =  Math.sin(time * 2.5) * maxAngleUArm;
+          rUpperArmPivot.rotation.y    = -Math.sin(time * 3.0) * maxAngleUArm;     // 3 deg
+          lForeArmMesh.rotation.y      =  Math.sin(time * 3.5) * maxAngleShoulder;
+          rForeArmMesh.rotation.y      = -Math.sin(time * 4.0) * maxAngleShoulder; // 4 deg
+          lForeArmPivot.rotation.y     =  Math.sin(time * 4.5) * maxAngleFArm;
+          rForeArmPivot.rotation.y     = -Math.sin(time * 5.0) * maxAngleFArm;   // 5 deg
+          lHandPivot.rotation.x        =  Math.sin(time * 5.5) * maxAngleHand;
+          rHandPivot.rotation.x        =  Math.sin(time * 6.0) * maxAngleHand;   // 6 deg
+          lLfingerPivot.rotation.z     =  Math.sin(time * 6.0) * maxAngleFinger;
+          lRfingerPivot.rotation.z     = -Math.sin(time * 6.0) * maxAngleFinger;
+          rLfingerPivot.rotation.z     =  Math.sin(time * 6.0) * maxAngleFinger;
+          rRfingerPivot.rotation.z     = -Math.sin(time * 6.0) * maxAngleFinger;
+
+          renderer.render(scene, camera);
+
+        }
+        renderer.setAnimationLoop(render);
+      }
+      main();
+    </script>
+  </body>
+</html>
