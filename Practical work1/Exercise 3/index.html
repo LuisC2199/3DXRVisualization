@@ -1,5 +1,3 @@
-
-<!-- Licensed under a BSD license. See license.html for license -->
 <!DOCTYPE html>
 <html>
   <head>
@@ -33,39 +31,42 @@
   </script>
 
     <script type="module">
-    import * as THREE from 'three';
-    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        // Import needed libraries
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+        // Function to create each cube
+        function makeInstance(scene, texture, geometry, color, x) {
+            const material = new THREE.MeshBasicMaterial({color, map: texture, side: THREE.DoubleSide});
 
-    function makeInstance(scene, texture, geometry, color, x) {
-        const material = new THREE.MeshBasicMaterial({color, map: texture, side: THREE.DoubleSide});
-
-        const cube = new THREE.Mesh(geometry, material);
-        scene.add(cube);
-        cube.position.x = x;
-        return cube;
-    }
+            const cube = new THREE.Mesh(geometry, material);
+            scene.add(cube);
+            cube.position.x = x;
+            return cube;
+        }
 
 
         function main() {
             const canvas = document.querySelector('#c');
             const renderer = new THREE.WebGLRenderer({canvas, antialias: true});
-            const gl = canvas.getContext('webgl2');
-            gl.disable(gl.CULL_FACE);
 
+            // Create the camera
             const fov = 75;
-            const aspect = 2;  // the canvas default
+            const aspect = 2; 
             const near = 0.1;
             const far = 100;
             const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
             camera.position.z = 5;
 
+            // Add Orbit Controls
             var controls = new OrbitControls( camera, renderer.domElement );
             controls.listenToKeyEvents( window ); // optional
 
+            // Create the scene
             const scene = new THREE.Scene();
             scene.background = new THREE.Color( 0x240722 );
 
+            // Add lighting
             {
                 const color = 0xFFFFFF;
                 const intensity = 1;
@@ -74,8 +75,8 @@
                 scene.add(light);
             }
 
-            // NOT A GOOD EXAMPLE OF HOW TO MAKE A CUBE!
-            // Only trying to make it clear most vertices are unique
+            // Create each vertex of the split cube to remove the center
+            // Each face has 12 vertices, not the best but it works 
             const vertices = [
                 // front
                 { pos: [   -1,   -1, 1], norm: [ 0,  0,  1], uv: [   0,    0], }, // 0
@@ -156,6 +157,8 @@
                 { pos: [ -0.5, -1,    1], norm: [ 0,  -1,  0], uv: [0.75,    1], }, // 70
                 { pos: [   -1, -1,    1], norm: [ 0,  -1,  0], uv: [   1,    1], }, // 71
             ];
+
+            // Process vertices and store position, normal and UV coordinatee for each
             const numVertices = vertices.length;
             const positionNumComponents = 3;
             const normalNumComponents = 3;
@@ -180,6 +183,7 @@
             geometry.setAttribute('normal',   new THREE.BufferAttribute(normals, normalNumComponents));
             geometry.setAttribute('uv',       new THREE.BufferAttribute(uvs, uvNumComponents));
 
+            // Define order of vertices to fill with texture
             geometry.setIndex([
                  0,  1,  8,   8,  1,  9,  // front
                  1,  2,  4,   4,  2,  5,
@@ -208,37 +212,46 @@
 
             ]);
 
+            // Load the texture
             const loader = new THREE.TextureLoader();
             const texture = loader.load('grenouille.jpg');
 
+            // Create cubes and apply texture
             const cubes = [
                 makeInstance(scene, texture, geometry, 0x00FFFF,  0),
                 makeInstance(scene, texture, geometry, 0xFFFF00, -3),
                 makeInstance(scene, texture, geometry, 0xFF00FF,  3),
             ];
 
-
+            // Adjust renderer size to canvas size
             function resizeRendererToDisplaySize(renderer) {
                 const canvas = renderer.domElement;
                 const width = canvas.clientWidth;
                 const height = canvas.clientHeight;
+
+                // Check if canvas needs to be resized
                 const needResize = canvas.width !== width || canvas.height !== height;
                 if (needResize) {
-                renderer.setSize(width, height, false);
+                    // Resize renderer to new
+                    renderer.setSize(width, height, false);
                 }
                 return needResize;
             }
 
+            // Render loop
             function render(time) {
                 //   time *= 0.0004;
 
+                // Resize renderer if needed and update camera aspect ratio
                 if (resizeRendererToDisplaySize(renderer)) {
-                const canvas = renderer.domElement;
-                camera.aspect = canvas.clientWidth / canvas.clientHeight;
-                camera.updateProjectionMatrix();
+                    const canvas = renderer.domElement;
+                    camera.aspect = canvas.clientWidth / canvas.clientHeight;
+                    camera.updateProjectionMatrix();
                 }
 
                 controls.update(); // only required if controls.enableDamping = true, or if controls.autoRotate = true
+                
+                // Render scene
                 renderer.render(scene, camera);
                 requestAnimationFrame(render);
             }
