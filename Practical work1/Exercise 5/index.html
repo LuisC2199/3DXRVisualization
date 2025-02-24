@@ -12,14 +12,14 @@
     <style>
       html,
       body {
-        width: 50%;
-        height: 50%;
+        width: 100%;
+        height: 100%;
         margin: 0;
       }
 
       #c {
-        width: 50%;
-        height: 50%;
+        width: 100%;
+        height: 100%;
         display: block;
       }
     </style>
@@ -100,6 +100,7 @@
         const prismMaterial = new THREE.MeshPhongMaterial( { color: 0xDFE7DE } );
         const prismMesh = new THREE.Mesh( prismGeometry, prismMaterial );
         prismMesh.position.y = 5;
+        prismMesh.position.z = -15;
         prismMesh.castShadow = true;
         base.add(prismMesh);
 
@@ -149,6 +150,7 @@
 
         const torsoMesh = new THREE.Mesh( torsoGeometry, materials );
         torsoMesh.position.y = 6;
+        torsoMesh.position.z = -15;
         torsoMesh.rotation.x = 1;
         torsoMesh.castShadow = true;
         torso.add(torsoMesh);
@@ -164,7 +166,7 @@
         const lShoulderPivot = new THREE.Object3D();
         lShoulderPivot.position.y = 8.2;
         lShoulderPivot.position.x = -1.6;
-        lShoulderPivot.position.z = 0.4;
+        lShoulderPivot.position.z = -14.6;
         lShoulderPivot.rotation.x = 0.2;
         lShoulderPivot.rotation.z = 0.65;
 
@@ -178,7 +180,7 @@
         const rShoulderPivot = new THREE.Object3D();
         rShoulderPivot.position.y = 8.2;
         rShoulderPivot.position.x = 1.6;
-        rShoulderPivot.position.z = 0.4;
+        rShoulderPivot.position.z = -14.6;
         rShoulderPivot.rotation.x = 0.2;
         rShoulderPivot.rotation.z = -0.65;
 
