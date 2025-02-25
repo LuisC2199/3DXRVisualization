@@ -6,7 +6,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, user-scalable=yes"
     />
-    <title>Exercise 5 – Surface lighting</title>
+    <title>Exercise 7 – VR experimentation</title>
     <style>
       html,
       body {
@@ -49,12 +49,12 @@
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer();
         renderer.setSize(window.innerWidth, window.innerHeight);
-
+        document.body.appendChild(renderer.domElement);
         // Add XR
         renderer.xr.enabled = true;
         document.body.appendChild( VRButton.createButton( renderer ) );
 
-        document.body.appendChild(renderer.domElement);
+        
 
         // Add Controllers
         const geometry = new THREE.BufferGeometry();
