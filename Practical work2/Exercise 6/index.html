@@ -34,23 +34,25 @@
   </script>
     
     <script type="module">
+        // Import libraries
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import GUI from 'https://cdn.jsdelivr.net/npm/lil-gui@0.20/+esm';
         import { ShadowMapViewer } from 'three/addons/utils/ShadowMapViewer.js';
 
+        // Create scene, camera and renderer
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer();
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
-        let dirLightShadowMapViewer, spotLightShadowMapViewer;
+
+        // Enable shadows
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.BasicShadowMap;
 
         // Light Sources
-
-        // Directional Light
+        // Directional Light with shadows
         const dirLight = new THREE.DirectionalLight(0xffffff, 1);
         dirLight.position.set(0, 3, 0);
         dirLight.castShadow = true;
@@ -64,7 +66,7 @@
 				dirLight.shadow.mapSize.height = 1024;
         scene.add(dirLight);
 
-        // Point Light
+        // Point Light with shadows
         const pointLight = new THREE.PointLight(0xffffff, 10, 200);
         pointLight.position.set(0, 3, 0);
         pointLight.castShadow = true;
@@ -81,8 +83,8 @@
 				pointLight.shadow.mapSize.height = 1024;
         scene.add(pointLight);
     
-        // Spot Light
-        const spotLight = new THREE.SpotLight(0xffffff, 1);
+        // Spot Light with shadows
+        const spotLight = new THREE.SpotLight(0xffffff, 10);
         spotLight.position.set(0, 3, 0);
         spotLight.angle = Math.PI / 4;
         spotLight.castShadow = true;
@@ -101,7 +103,7 @@
         const ambientLight = new THREE.AmbientLight(0xFFFFFF,0.1);
         scene.add(ambientLight);
 
-        // Walls (Cornell Box)
+        // Function to create walls
         const createWall = (w, h, d, color, x, y, z, rx = 0, ry = 0, rz = 0) => {
             const geometry = new THREE.BoxGeometry(w, h, d);
             const material = new THREE.MeshLambertMaterial({ color:color });
@@ -114,14 +116,14 @@
             return mesh;
         };
 
-        // Floor, Ceiling, and Walls
-        createWall(12.5, 12.5, 0.1, 0xffffff, 0, 0, -6.25); // Back Wall
-        createWall(12.5, 12.5, 0.1, 0xff0000, -6.25, 0, 0, 0, Math.PI / 2, 0); // Left Wall (Red)
-        createWall(12.5, 12.5, 0.1, 0x00ff00, 6.25, 0, 0, 0, Math.PI / 2, 0); // Right Wall (Green)
-        createWall(12.5, 0.1, 12.5, 0x9f9f9f, 0, -6.25, 0); // Floor
-        createWall(12.5, 0.1, 12.5, 0xffffff, 0, 6.25, 0); // Ceiling
+        // Walls, floor, ceiling
+        createWall(12.5, 12.5, 0.1, 0xffffff, 0, 0, -6.25);
+        createWall(12.5, 12.5, 0.1, 0xff0000, -6.25, 0, 0, 0, Math.PI / 2, 0); 
+        createWall(12.5, 12.5, 0.1, 0x00ff00, 6.25, 0, 0, 0, Math.PI / 2, 0); 
+        createWall(12.5, 0.1, 12.5, 0x9f9f9f, 0, -6.25, 0); 
+        createWall(12.5, 0.1, 12.5, 0xffffff, 0, 6.25, 0); 
 
-        // Table in the middle
+        // Table creator
         const createTable = (x, y, z, rotationY = 0) => {
             const tableTop = new THREE.BoxGeometry(2, 0.2, 4);
             const tableLeg = new THREE.BoxGeometry(0.2, 2.5, 0.2);
@@ -152,13 +154,14 @@
             });
         };
 
+        // Tables
         createTable(-3, -4.25, 3);
         createTable(3, -4.25, 3);
         createTable(-3, -4.25, -1);
         createTable(3, -4.25, -1);
         createTable(0, -4.25, -2, Math.PI / 2);
 
-        // Camera Positioning
+        // Camera and controls
         camera.position.set(0, 0, 22);
         const controls = new OrbitControls(camera, renderer.domElement);
 
@@ -177,7 +180,7 @@
         const cylinder = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
         cylinder.castShadow = true;
         cylinder.receiveShadow = true;
-        cylinder.position.set(3, -2, -2);
+        cylinder.position.set(3, -1.5, -2);
         scene.add(cylinder);
 
         // Physical Sphere
@@ -189,13 +192,15 @@
         sphere.position.set(0, -5.25, 2);
         scene.add(sphere);
 
-        // GUI setup
+        // GUI for lights
         const gui = new GUI();
         const dirFolder = gui.addFolder('Directional Light');
         dirFolder.addColor({ color: "#ffffff" }, 'color').onChange(value => {
             dirLight.color.set(value);
         });
         dirFolder.add(dirLight, 'intensity', 0, 2);
+
+        dirFolder.close();
 
         const pointFolder = gui.addFolder('Point Light');
         pointFolder.addColor({ color: "#ffffff" }, 'color').onChange(value => {
@@ -204,12 +209,16 @@
         pointFolder.add(pointLight, 'intensity', 0, 20);
         pointFolder.add(pointLight, 'distance', 1, 20);
 
+        pointFolder.close();
+
         const spotFolder = gui.addFolder('Spot Light');
         spotFolder.addColor({ color: "#ffffff" }, 'color').onChange(value => {
             spotLight.color.set(value);
         });
         spotFolder.add(spotLight, 'intensity', 0, 10);
         spotFolder.add(spotLight, 'angle', 0, Math.PI / 2);
+
+        spotFolder.close();
 
         const hemiFolder = gui.addFolder('Hemisphere Light');
         hemiFolder.addColor({ skyColor: "#ffffff" }, 'skyColor').onChange(value => {
@@ -220,46 +229,79 @@
         });
         hemiFolder.add(hemisphereLight, 'intensity', 0, 2);
 
-        const shadowFolder = gui.addFolder('Shadows');
+        hemiFolder.close();
 
-        // Control shadow map size
-        const shadowSizeOptions = [512, 1024, 2048, 4096];
-
-        shadowFolder.add({ mapSize: dirLight.shadow.mapSize.width }, 'mapSize', shadowSizeOptions)
-            .name('Dir Light Map Size')
+        // GUI for shadows
+        const shadowMapFolder = gui.addFolder('Shadow Maps');
+        const minSize = 256;
+        const maxSize = 2048;
+        const stepSize = 64;
+        
+        // Directional Light
+        shadowMapFolder.add(dirLight.shadow.mapSize, 'width', minSize, maxSize, stepSize)
+            .name('Dir Light Width')
             .onChange(value => {
-                dirLight.shadow.mapSize.set(value, value);
+                dirLight.shadow.mapSize.width = value;
                 dirLight.shadow.needsUpdate = true;
             });
 
-        shadowFolder.add({ mapSize: pointLight.shadow.mapSize.width }, 'mapSize', shadowSizeOptions)
-            .name('Point Light Map Size')
+        shadowMapFolder.add(dirLight.shadow.mapSize, 'height', minSize, maxSize, stepSize)
+            .name('Dir Light Height')
             .onChange(value => {
-                pointLight.shadow.mapSize.set(value, value);
+                dirLight.shadow.mapSize.height = value;
+                dirLight.shadow.needsUpdate = true;
+            });
+
+        // Point Light
+        shadowMapFolder.add(pointLight.shadow.mapSize, 'width', minSize, maxSize, stepSize)
+            .name('Point Light Width')
+            .onChange(value => {
+                pointLight.shadow.mapSize.width = value;
                 pointLight.shadow.needsUpdate = true;
             });
 
-        shadowFolder.add({ mapSize: spotLight.shadow.mapSize.width }, 'mapSize', shadowSizeOptions)
-            .name('Spot Light Map Size')
+        shadowMapFolder.add(pointLight.shadow.mapSize, 'height', minSize, maxSize, stepSize)
+            .name('Point Light Height')
             .onChange(value => {
-                spotLight.shadow.mapSize.set(value, value);
+                pointLight.shadow.mapSize.height = value;
+                pointLight.shadow.needsUpdate = true;
+            });
+
+        // Spot Light
+        shadowMapFolder.add(spotLight.shadow.mapSize, 'width', minSize, maxSize, stepSize)
+            .name('Spot Light Width')
+            .onChange(value => {
+                spotLight.shadow.mapSize.width = value;
                 spotLight.shadow.needsUpdate = true;
             });
 
-        // Control shadow bias (helps reduce acne artifacts)
-        shadowFolder.add(dirLight.shadow, 'bias', -0.01, 0.01, 0.0001).name('Dir Light Bias');
-        shadowFolder.add(pointLight.shadow, 'bias', -0.01, 0.01, 0.0001).name('Point Light Bias');
-        shadowFolder.add(spotLight.shadow, 'bias', -0.01, 0.01, 0.0001).name('Spot Light Bias');
+        shadowMapFolder.add(spotLight.shadow.mapSize, 'height', minSize, maxSize, stepSize)
+            .name('Spot Light Height')
+            .onChange(value => {
+                spotLight.shadow.mapSize.height = value;
+                spotLight.shadow.needsUpdate = true;
+            });
+
+        shadowMapFolder.open();
+
+        // Control shadow bias 
+        const shadowBiasFolder = gui.addFolder('Shadow Maps');
+        shadowBiasFolder.add(dirLight.shadow, 'bias', -0.01, 0.01, 0.0001).name('Dir Light Bias');
+        shadowBiasFolder.add(pointLight.shadow, 'bias', -0.01, 0.01, 0.0001).name('Point Light Bias');
+        shadowBiasFolder.add(spotLight.shadow, 'bias', -0.01, 0.01, 0.0001).name('Spot Light Bias');
+        
+        shadowBiasFolder.open();
 
         // Adjust shadow camera settings
-        shadowFolder.add(dirLight.shadow.camera, 'near', 0.1, 10).name('Dir Shadow Near');
-        shadowFolder.add(dirLight.shadow.camera, 'far', 10, 50).name('Dir Shadow Far');
-        shadowFolder.add(dirLight.shadow.camera, 'left', -20, 0).name('Dir Shadow Left');
-        shadowFolder.add(dirLight.shadow.camera, 'right', 0, 20).name('Dir Shadow Right');
-        shadowFolder.add(dirLight.shadow.camera, 'top', 0, 20).name('Dir Shadow Top');
-        shadowFolder.add(dirLight.shadow.camera, 'bottom', -20, 0).name('Dir Shadow Bottom');
+        const shadowSettingsFolder = gui.addFolder('Shadow Maps');
+        shadowSettingsFolder.add(dirLight.shadow.camera, 'near', 0.1, 10).name('Dir Shadow Near');
+        shadowSettingsFolder.add(dirLight.shadow.camera, 'far', 10, 50).name('Dir Shadow Far');
+        shadowSettingsFolder.add(dirLight.shadow.camera, 'left', -20, 0).name('Dir Shadow Left');
+        shadowSettingsFolder.add(dirLight.shadow.camera, 'right', 0, 20).name('Dir Shadow Right');
+        shadowSettingsFolder.add(dirLight.shadow.camera, 'top', 0, 20).name('Dir Shadow Top');
+        shadowSettingsFolder.add(dirLight.shadow.camera, 'bottom', -20, 0).name('Dir Shadow Bottom');
 
-        shadowFolder.open();
+        shadowSettingsFolder.open();
 
         // Animation loop
         function animate() {
