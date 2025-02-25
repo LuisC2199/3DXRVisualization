@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=yes"
+    />
+    <title>Exercise 5 – Surface lighting</title>
+    <style>
+      html,
+      body {
+        width: 50%;
+        height: 50%;
+        margin: 0;
+      }
+
+      #c {
+        width: 50%;
+        height: 50%;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+  <script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.172.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.172.0/examples/jsm/"
+      }
+    }
+  </script>
+    
+    <script type="module">
+        // Import libraries
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import GUI from 'https://cdn.jsdelivr.net/npm/lil-gui@0.20/+esm';
+        import { RectAreaLightHelper } from 'three/addons/helpers/RectAreaLightHelper.js';
+        import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
+        import { VRButton } from 'three/addons/webxr/VRButton.js';
+        import { InteractiveGroup } from 'three/addons/interactive/InteractiveGroup.js';
+			  import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
+
+        // Create scene, camera and renderer
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        // Add XR
+        renderer.xr.enabled = true;
+        document.body.appendChild( VRButton.createButton( renderer ) );
+
+        document.body.appendChild(renderer.domElement);
+
+        // Add Controllers
+        const geometry = new THREE.BufferGeometry();
+				geometry.setFromPoints( [ new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( 0, 0, - 5 ) ] );
+
+        const controller1 = renderer.xr.getController( 0 );
+				controller1.add( new THREE.Line( geometry ) );
+				scene.add( controller1 );
+
+				const controller2 = renderer.xr.getController( 1 );
+				controller2.add( new THREE.Line( geometry ) );
+				scene.add( controller2 );
+
+        const controllerModelFactory = new XRControllerModelFactory();
+
+				const controllerGrip1 = renderer.xr.getControllerGrip( 0 );
+				controllerGrip1.add( controllerModelFactory.createControllerModel( controllerGrip1 ) );
+				scene.add( controllerGrip1 );
+
+				const controllerGrip2 = renderer.xr.getControllerGrip( 1 );
+				controllerGrip2.add( controllerModelFactory.createControllerModel( controllerGrip2 ) );
+				scene.add( controllerGrip2 );
+
+        // Texture Loader and Cube Texture loader for maps
+        const textureLoader = new THREE.TextureLoader();
+        const cubeTextureLoader = new THREE.CubeTextureLoader();
+
+        // Function to get the Map Keys of object
+        function getObjectsKeys( obj ) {
+          const keys = [];
+          for ( const key in obj ) {
+            if ( obj.hasOwnProperty( key ) ) {
+              keys.push( key );
+            }
+          }
+          return keys;
+        }
+
+        // EnvMaps
+        const envMaps = ( function () {
+
+          const path = 'SwedishRoyalCastle/';
+          const format = '.jpg';
+          const urls = [
+            path + 'px' + format, path + 'nx' + format,
+            path + 'py' + format, path + 'ny' + format,
+            path + 'pz' + format, path + 'nz' + format
+          ];
+          const reflectionCube = cubeTextureLoader.load( urls );
+
+          const refractionCube = cubeTextureLoader.load( urls );
+          refractionCube.mapping = THREE.CubeRefractionMapping;
+
+          return {
+            none: null,
+            reflection: reflectionCube,
+            refraction: refractionCube
+          };
+
+        })();
+
+        // Diffuse map
+        const diffuseMaps = ( function () {
+
+          const bricks = textureLoader.load( 'brick_diffuse.jpg' );
+          bricks.wrapS = THREE.RepeatWrapping;
+          bricks.wrapT = THREE.RepeatWrapping;
+          bricks.repeat.set( 9, 1 );
+
+          return {
+            none: null,
+            bricks: bricks
+          };
+
+        } )();
+
+        // Alpha Map
+        const alphaMaps = ( function () {
+          const fibers = textureLoader.load( 'alphaMap.jpg' );
+          fibers.wrapT = THREE.RepeatWrapping;
+          fibers.wrapS = THREE.RepeatWrapping;
+          fibers.repeat.set( 9, 1 );
+
+          return {
+            none: null,
+            fibers: fibers
+          };
+
+        } )();
+
+        // Roughness Map
+        const roughnessMaps = ( function () {
+
+          const bricks = textureLoader.load( 'brick_roughness.jpg' );
+          bricks.wrapT = THREE.RepeatWrapping;
+          bricks.wrapS = THREE.RepeatWrapping;
+          bricks.repeat.set( 9, 1 );
+
+          return {
+            none: null,
+            bricks: bricks
+          };
+
+        } )();
+
+        function updateTexture( material, materialKey, textures ) {
+          return function ( key ) {
+            material[ materialKey ] = textures[ key ];
+            material.needsUpdate = true;
+          };
+        }
+
+        // Function to create walls
+        const createWall = (w, h, d, color, x, y, z, rx = 0, ry = 0, rz = 0) => {
+            const geometry = new THREE.BoxGeometry(w, h, d);
+            const material = new THREE.MeshLambertMaterial({ color:color });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(x, y, z);
+            mesh.rotation.set(rx, ry, rz);
+            scene.add(mesh);
+            return mesh;
+        };
+
+        // Floor, ceiling, and walls
+        createWall(12.5, 12.5, 0.1, 0xffffff, 0, 0, -6.25); 
+        createWall(12.5, 12.5, 0.1, 0xff0000, -6.25, 0, 0, 0, Math.PI / 2, 0);
+        createWall(12.5, 12.5, 0.1, 0x00ff00, 6.25, 0, 0, 0, Math.PI / 2, 0); 
+        createWall(12.5, 0.1, 12.5, 0x9f9f9f, 0, -6.25, 0); // Floor
+        createWall(12.5, 0.1, 12.5, 0xffffff, 0, 6.25, 0); // Ceiling
+
+        // Tables
+        const createTable = (x, y, z, rotationY = 0) => {
+            const tableTop = new THREE.BoxGeometry(2, 0.2, 4);
+            const tableLeg = new THREE.BoxGeometry(0.2, 2.5, 0.2);
+            const material = new THREE.MeshLambertMaterial({ color: 0xf0f0f0 });
+
+            const top = new THREE.Mesh(tableTop, material);
+            top.position.set(x, y + 0.6, z);
+            top.rotation.y = rotationY;
+            scene.add(top);
+
+            const legOffsets = [
+                [-0.9, -0.7, -1.6],
+                [0.9, -0.7, -1.6],
+                [-0.9, -0.7, 1.6],
+                [0.9, -0.7, 1.6]
+            ];
+
+            legOffsets.forEach(offset => {
+                const leg = new THREE.Mesh(tableLeg, material);
+                const rotatedX = offset[0] * Math.cos(rotationY) - offset[2] * Math.sin(rotationY);
+                const rotatedZ = offset[0] * Math.sin(rotationY) + offset[2] * Math.cos(rotationY);
+                leg.position.set(x + rotatedX, y + offset[1], z + rotatedZ);
+                scene.add(leg);
+            });
+        };
+
+        createTable(-3, -4.25, 3);
+        createTable(3, -4.25, 3);
+        createTable(-3, -4.25, -1);
+        createTable(3, -4.25, -1);
+        createTable(0, -4.25, -2, Math.PI / 2);
+
+        // Light Sources
+        {
+          const light = new THREE.PointLight(0xffffff, 20, 200);
+          light.position.set(0, 4, 0);
+          scene.add(light);
+
+          // Ambient light
+          const ambientLight = new THREE.AmbientLight(0xFFFFFF,0.6);
+          scene.add(ambientLight);
+        }
+
+        // Rectangular lights
+        {
+          RectAreaLightUniformsLib.init();
+
+          // White back light
+          const rectLight1 = new THREE.RectAreaLight( 0xffffff, 2, 12.5, 12.5 );
+          rectLight1.position.set( 0, 0, -6.25 );
+          rectLight1.rotation.y = Math.PI;
+          scene.add( rectLight1 );
+
+          // Red left light
+          const rectLight2 = new THREE.RectAreaLight( 0xff0000, 2, 12.5, 12.5 );
+          rectLight2.position.set( -6.25, 0, 0 );
+          rectLight2.rotation.y = -Math.PI/2;
+          scene.add( rectLight2 );
+
+          // Green right light
+          const rectLight3 = new THREE.RectAreaLight( 0x00ff00, 2, 12.5, 12.5 );
+          rectLight3.position.set( 6.25, 0, 0 );
+          rectLight3.rotation.y = Math.PI/2;
+          scene.add( rectLight3 );
+
+          scene.add( new RectAreaLightHelper( rectLight1 ) );
+          scene.add( new RectAreaLightHelper( rectLight2 ) );
+          scene.add( new RectAreaLightHelper( rectLight3 ) );
+        }
+
+        // Camera Positioning
+        camera.position.set(0, 0, 22);
+        const controls = new OrbitControls(camera, renderer.domElement);
+
+        // Lambertian Cone
+        const coneGeometry = new THREE.ConeGeometry( 1, 3, 16 );
+        const coneMaterial = new THREE.MeshLambertMaterial({ color: 0xFD7014 });
+        const cone = new THREE.Mesh(coneGeometry, coneMaterial);
+        cone.position.set(-3, -2, -2);
+        scene.add(cone);
+
+        // Phong Cylinder
+        const cylinderGeometry = new THREE.CylinderGeometry( 1, 1, 4, 16 );
+        const cylinderMaterial = new THREE.MeshPhongMaterial({ color: 0x9A2C80 });
+        const cylinder = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
+        cylinder.position.set(3, -1.5, -2);
+        scene.add(cylinder);
+
+        // Physical Sphere
+        const sphereGeometry = new THREE.SphereGeometry( 1, 16, 16 );
+        const sphereMaterial = new THREE.MeshPhysicalMaterial({ color: 0x23EAE6 });
+        const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+        sphere.position.set(0, -5.25, 2);
+        scene.add(sphere);
+
+        // GUI Setup
+        const gui = new GUI();
+
+        const envMapKeys = getObjectsKeys( envMaps );
+        const diffuseMapKeys = getObjectsKeys( diffuseMaps );
+        const alphaMapKeys = getObjectsKeys( alphaMaps );
+        const roughnessMapKeys = getObjectsKeys( roughnessMaps );
+
+        // Shared Properties
+        const sharedFolder = gui.addFolder('Shared Properties');
+        const sharedData = {
+            emissive: "#000000",
+            envMaps: envMapKeys[0],
+            map: diffuseMapKeys[0],
+            alphaMap: alphaMapKeys[0],
+            flatShading: false,
+            wireframe: false,
+            vertexColors: false,
+            fog: false,
+            reflectivity: 0.5,
+            refractionRatio: 0.5
+        };
+        // Shared Controls
+        sharedFolder.addColor(sharedData, 'emissive').onChange(value => {
+            coneMaterial.emissive.set(value);
+            cylinderMaterial.emissive.set(value);
+            sphereMaterial.emissive.set(value);
+        });
+        sharedFolder.add(sharedData, 'envMaps', envMapKeys).onChange(value => {
+            updateTexture(coneMaterial, 'envMap', envMaps)(value);
+            updateTexture(cylinderMaterial, 'envMap', envMaps)(value);
+            updateTexture(sphereMaterial, 'envMap', envMaps)(value);
+        });
+        sharedFolder.add(sharedData, 'map', diffuseMapKeys).onChange(value => {
+            updateTexture(coneMaterial, 'map', diffuseMaps)(value);
+            updateTexture(cylinderMaterial, 'map', diffuseMaps)(value);
+            updateTexture(sphereMaterial, 'map', diffuseMaps)(value);
+        });
+        sharedFolder.add(sharedData, 'alphaMap', alphaMapKeys).onChange(value => {
+            updateTexture(coneMaterial, 'alphaMap', alphaMaps)(value);
+            updateTexture(cylinderMaterial, 'alphaMap', alphaMaps)(value);
+            updateTexture(sphereMaterial, 'alphaMap', alphaMaps)(value);
+        });
+        sharedFolder.add(sharedData, 'flatShading').onChange(value => {
+            coneMaterial.flatShading = value;
+            cylinderMaterial.flatShading = value;
+            sphereMaterial.flatShading = value;
+            coneMaterial.needsUpdate = true;
+            cylinderMaterial.needsUpdate = true;
+            sphereMaterial.needsUpdate = true;
+        });
+        sharedFolder.add(sharedData, 'wireframe').onChange(value => {
+            coneMaterial.wireframe = value;
+            cylinderMaterial.wireframe = value;
+            sphereMaterial.wireframe = value;
+        });
+        sharedFolder.add(sharedData, 'vertexColors').onChange(value => {
+            coneMaterial.vertexColors = value;
+            cylinderMaterial.vertexColors = value;
+            sphereMaterial.vertexColors = value;
+            coneMaterial.needsUpdate = true;
+            cylinderMaterial.needsUpdate = true;
+            sphereMaterial.needsUpdate = true;
+        });
+        sharedFolder.add(sharedData, 'fog').onChange(value => {
+            coneMaterial.fog = value;
+            cylinderMaterial.fog = value;
+            sphereMaterial.fog = value;
+            coneMaterial.needsUpdate = true;
+            cylinderMaterial.needsUpdate = true;
+            sphereMaterial.needsUpdate = true;
+        });
+        sharedFolder.add(sharedData, 'reflectivity', 0, 1).onChange(value => {
+            coneMaterial.reflectivity = value;
+            cylinderMaterial.reflectivity = value;
+            sphereMaterial.reflectivity = value;
+        });
+        sharedFolder.add(sharedData, 'refractionRatio', 0, 1).onChange(value => {
+            coneMaterial.refractionRatio = value;
+            cylinderMaterial.refractionRatio = value;
+            sphereMaterial.refractionRatio = value;
+        });
+
+        sharedFolder.close();
+
+        // Lambertian Cone GUI
+        const coneFolder = gui.addFolder('Lambertian Cone');
+        const LambertData = {
+            color: "#FD7014 ",
+        };
+        coneFolder.addColor( LambertData, 'color' ).onChange(value => { coneMaterial.color.set(value); });
+
+        coneFolder.close();
+
+        // Phong Cylinder GUI
+        const cylinderFolder = gui.addFolder('Phong Cylinder');
+        const phongData = {
+            color: "#9A2C80",
+            specular: "#111111",
+        };
+        cylinderFolder.addColor(phongData, 'color').onChange(value => { cylinderMaterial.color.set(value); });
+        cylinderFolder.addColor(phongData, 'specular').onChange(value => { cylinderMaterial.specular.set(value); });
+        cylinderFolder.add(cylinderMaterial, 'shininess', 0, 100);
+
+        cylinderFolder.close();
+
+        // Physical Sphere GUI
+        const sphereFolder = gui.addFolder('Physical Sphere');
+        const physicalData = {
+            color: "#23EAE6",
+            specular: "#111111",
+            roughnessMap: roughnessMapKeys[ 0 ],
+            metalnessMap: alphaMapKeys[ 0 ],
+            sheenColor: sphereMaterial.sheenColor.getHex(),
+            specularColor: sphereMaterial.specularColor.getHex(),
+            iridescenceMap: alphaMapKeys[ 0 ]
+        };
+        sphereFolder.addColor( physicalData, 'color' ).onChange(value => { sphereMaterial.color.set(value); });
+				sphereFolder.add( sphereMaterial, 'roughness', 0, 1 );
+				sphereFolder.add( sphereMaterial, 'metalness', 0, 1 );
+				sphereFolder.add( sphereMaterial, 'ior', 1, 2.333 );
+				sphereFolder.add( sphereMaterial, 'iridescence', 0, 1 );
+				sphereFolder.add( sphereMaterial, 'iridescenceIOR', 1, 2.333 );
+				sphereFolder.add( sphereMaterial, 'sheen', 0, 1 );
+				sphereFolder.add( sphereMaterial, 'sheenRoughness', 0, 1 );
+				sphereFolder.addColor( physicalData, 'sheenColor' ).onChange(value => { sphereMaterial.sheenColor.set(value); });
+				sphereFolder.add( sphereMaterial, 'clearcoat', 0, 1 ).step( 0.01 );
+				sphereFolder.add( sphereMaterial, 'clearcoatRoughness', 0, 1 ).step( 0.01 );
+				sphereFolder.add( sphereMaterial, 'specularIntensity', 0, 1);
+				sphereFolder.addColor( physicalData, 'specularColor' ).onChange(value => { sphereMaterial.specularColor.set(value); });
+				sphereFolder.add( physicalData, 'roughnessMap', roughnessMapKeys ).onChange( updateTexture( sphereMaterial, 'roughnessMap', roughnessMaps ) );
+				sphereFolder.add( physicalData, 'metalnessMap', alphaMapKeys ).onChange( updateTexture( sphereMaterial, 'metalnessMap', alphaMaps ) );
+				sphereFolder.add( physicalData, 'iridescenceMap', alphaMapKeys ).onChange( updateTexture( sphereMaterial, 'iridescenceMap', alphaMaps ) );
+
+        sphereFolder.close();
+
+        // Listen to the controller events
+        const group = new InteractiveGroup();
+				group.listenToPointerEvents( renderer, camera );
+				group.listenToXRControllerEvents( controller1 );
+				group.listenToXRControllerEvents( controller2 );
+				scene.add( group );
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+    </body>
+</html>
